@@ -5,9 +5,30 @@ using UnityEngine;
 [RequireComponent(typeof(MeshFilter))]
 public class ChunkMeshController : MonoBehaviour
 {
+    public enum BlendMode
+    {
+        AVERAGE,
+        ADD,
+        MULTIPLY,
+        DIVIDE,
+        SUBTRACT,
+    }
+
+    [System.Serializable]
+    public class NoiseField
+    {
+        public bool enabled = true;
+        public BlendMode blendMode = BlendMode.ADD;
+        public Vector3 offset;
+        public float zoom = 20;
+        public float flattenAmount;
+        public float flattenOffset;
+    }
+
     public int resolution = 10;
-    public float zoom = 10;
     public float densityThreshold = 0.5f;
+
+    public NoiseField[] fields;
 
     private MeshFilter meshFilter;
     private MeshCollider meshCol;
@@ -36,7 +57,36 @@ public class ChunkMeshController : MonoBehaviour
                 for (int z = 0; z < voxels.GetLength(2); z++)
                 {
                     Vector3 pos = new Vector3(x, y, z);
-                    float density = Noise.perlin3D(pos / zoom);
+                    float density = 0;
+
+                    foreach (NoiseField field in fields)
+                    {
+                        if (!enabled) continue;
+                        Vector3 noisePos = (pos + transform.position) / field.zoom + field.offset;
+
+                        float d = Noise.perlin3D(noisePos);
+                        d -= ((y + field.flattenOffset) / 100.0f) * field.flattenAmount;
+
+                        switch (field.blendMode)
+                        {
+                            case BlendMode.AVERAGE:
+                                density = (density + d) / 2;
+                                break;
+                            case BlendMode.ADD:
+                                density += d;
+                                break;
+                            case BlendMode.MULTIPLY:
+                                density *= d;
+                                break;
+                            case BlendMode.DIVIDE:
+                                density /= d;
+                                break;
+                            case BlendMode.SUBTRACT:
+                                density -= d;
+                                break;
+                        }
+                    }
+
                     voxels[x, y, z] = (density > densityThreshold);
                 }
             }
