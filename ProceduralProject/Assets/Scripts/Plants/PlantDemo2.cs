@@ -12,35 +12,6 @@ public enum BranchingType
     WhorledThree,
 }
 
-public class InstanceCollection
-{
-    public List<CombineInstance> branchInstances = new List<CombineInstance>();
-    public List<CombineInstance> leafInstances = new List<CombineInstance>();
-
-    public void AddBranch(Mesh branchMesh, Matrix4x4 xform)
-    {
-        branchInstances.Add(new CombineInstance() { mesh = branchMesh, transform = xform });
-    }
-    public void AddLeaf(Mesh leafMesh, Matrix4x4 xform)
-    {
-        branchInstances.Add(new CombineInstance() { mesh = leafMesh, transform = xform });
-    }
-    public Mesh MakeMultiMesh()
-    {
-        Mesh branchMesh = new Mesh();
-        branchMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        branchMesh.CombineMeshes(branchInstances.ToArray());
-
-        Mesh leafMesh = new Mesh();
-        leafMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        leafMesh.CombineMeshes(leafInstances.ToArray());
-
-        Mesh finalMesh = new Mesh();
-        finalMesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
-        finalMesh.CombineMeshes();
-    }
-}
-
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 public class PlantDemo2 : MonoBehaviour
@@ -100,7 +71,7 @@ public class PlantDemo2 : MonoBehaviour
         randGenerator = new System.Random(seed);
 
         // make storage
-        InstanceCollection instances = new InstanceCollection();
+        List<CombineInstance> instances = new List<CombineInstance>();
 
         // create mesh instances
         Grow(instances, Vector3.zero, Quaternion.identity, new Vector3(0.25f, 1, 0.25f), iterations);
@@ -114,13 +85,15 @@ public class PlantDemo2 : MonoBehaviour
         if (meshFilter) meshFilter.mesh = mesh;
     }
 
-    void Grow(InstanceCollection instances, Vector3 pos, Quaternion rot, Vector3 scale, int max, int num = 0, float nodeSpin = 0)
+    void Grow(List<CombineInstance> instances, Vector3 pos, Quaternion rot, Vector3 scale, int max, int num = 0, float nodeSpin = 0)
     {
         if (num >= max) return; // stop recursion
 
         // make a cube mesh, add to list
-        Matrix4x4 xform = new Matrix4x4(pos, rot, scale);
-        instances.AddBranch(MeshTools.MakeCube(), xform);
+        Matrix4x4 xform = Matrix4x4.TRS(pos, rot, scale);
+        CombineInstance instance = new CombineInstance();
+        instance.mesh = MeshTools.MakeCube();
+        instances.Add(instance);
 
         // recursion
         float percentAtEnd = num++ / (float)max;

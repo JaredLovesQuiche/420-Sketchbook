@@ -11,6 +11,8 @@ public class TerrainFace
     Vector3 axisA;
     Vector3 axisB;
 
+    public GameObject[] rocks;
+
     public TerrainFace(ShapeGenerator shapeGenerator, Mesh mesh, int resolution, Vector3 localUp)
     {
         this.shapeGenerator = shapeGenerator;
