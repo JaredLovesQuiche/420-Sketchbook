@@ -27,12 +27,10 @@ class Agent
   }
   
   void update()
-  {
-    target = big.position.copy();
+  { 
+    PVector offset;
     
-    targetAngle += targetSpeed;
-    target.x += (targetRadius * cos(targetAngle));
-    target.y += (targetRadius * sin(targetAngle));
+    target = PVector.add(position, offset);
     
     doSteeringForce();
     doEuler();
