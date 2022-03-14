@@ -27,8 +27,10 @@ class Agent
   }
   
   void update()
-  { 
-    PVector offset;
+  {
+    float angle = grid.getDirectionAt(position);
+    PVector offset = PVector.fromAngle(angle);
+    offset.mult(100);
     
     target = PVector.add(position, offset);
     
