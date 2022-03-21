@@ -13,18 +13,15 @@ public static class Pathfinder
 
         public float moveCost = 1;
         public List<Node> neighbors = new List<Node>();
-        private Node _parent;
-        public Node parent
+        public Node parent { get; private set; }
+        public void UpdateParentAndG(Node parent, float extraG = 0)
         {
-            get { return _parent; }
-            set 
-            { 
-                _parent = value;
-                if (_parent != null)
-                {
-                    G = _parent.G;
-                }
+            this.parent = parent;
+            if (parent != null)
+            {
+                G = parent.G + moveCost + extraG;
             }
+            else G = 0;
         }
 
         public void DoHeuristic(Node end)
@@ -35,6 +32,8 @@ public static class Pathfinder
 
     public static List<Node> Solve(Node start, Node end)
     {
+        if (start == null || end == null) return new List<Node>();
+
         List<Node> open = new List<Node>();
         List<Node> closed = new List<Node>();
 
@@ -69,7 +68,10 @@ public static class Pathfinder
                         open.Add(neighbor);
                         //set parent
                         //set G & H cost
-                        neighbor.parent = current;
+
+                        float dis = (neighbor.position - current.position).magnitude;
+
+                        neighbor.UpdateParentAndG(current);
                         if (neighbor == end) { isDone = true; }
                         neighbor.DoHeuristic(end);
                     }
@@ -77,14 +79,19 @@ public static class Pathfinder
                     {
                         // TODO: if G cost is lower, change neighbor's parent
 
-                        if (neighbor.G > current.G + neighbor.moveCost)
+                        float dis = (neighbor.position - current.position).magnitude;
+                        if (current.G + neighbor.moveCost + dis < neighbor.G)
                         {
                             // its shorter to move to neighbor from current
-                            neighbor.parent = current;
+                            neighbor.UpdateParentAndG(current, dis);
                         }
                     }
                 }
             }
+
+            closed.Add(current);
+            open.Remove(current);
+
             if (isDone) break;
         }
         // 2. travel from end to start, building path
@@ -92,7 +99,7 @@ public static class Pathfinder
 
         for (Node temp = end; temp != null; temp = temp.parent)
         {
-
+            path.Add(temp);
         }
 
         // 3. reverse created path
