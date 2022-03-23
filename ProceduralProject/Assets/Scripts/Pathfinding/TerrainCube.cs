@@ -38,11 +38,14 @@ public class TerrainCube : MonoBehaviour
         type += 1;
         if ((int)type > 2) type = TerrainType.Open;
         UpdateArt();
+
+        // rebuild our array of nodes
+
+        if (GridController.singleton) GridController.singleton.MakeNodes();
     }
 
     void UpdateArt()
     {
-        print((int)type + " " + type.ToString());
         bool isShowingWall = (type == TerrainType.Wall);
         bool isShowingSlime = (type == TerrainType.Slime);
 

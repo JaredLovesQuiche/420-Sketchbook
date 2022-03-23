@@ -33,7 +33,7 @@ public class TerrainManager : MonoBehaviour
         Main.pheromoneDataTemplate = new PheromoneData[Settings.generationWidth, Settings.generationHeight];
 
         Vector3Int[] positions = new Vector3Int[Settings.generationWidth * Settings.generationHeight];
-        Tile[] tiles = new Tile[Settings.generationWidth * Settings.generationHeight];
+        TileBase[] tiles = new Tile[Settings.generationWidth * Settings.generationHeight];
 
         int index = 0;
         for (int y = 0; y < Settings.generationHeight; y++)
