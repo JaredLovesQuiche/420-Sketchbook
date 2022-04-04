@@ -15,8 +15,7 @@ public class Pathfinding : MonoBehaviour
         Vector3 OriginPosition = RoundVector3(S);
         Vector3 TargetPosition = RoundVector3(T);
 
-        RaycastHit testRay;
-        Physics.Linecast(transform.position, OriginPosition, (LayerMask)13);
+        bool testRay = Physics.Linecast(transform.position, OriginPosition, (LayerMask)13);
         Debug.DrawLine(OriginPosition + new Vector3(TileSize / 2, TileSize / 2, 0), OriginPosition - new Vector3(TileSize / 2, TileSize / 2, 0), Color.magenta, 0.5f);
         //Debug.Log(OriginPosition);
         if (testRay)
