@@ -3,9 +3,12 @@ using UnityEngine;
 
 public class Pathfinding : MonoBehaviour
 {
+    public Transform debugSphere;
+
     public List<PathfindTile> OpenList = new List<PathfindTile>();
     public List<PathfindTile> ClosedList = new List<PathfindTile>();
-    public float TileSize = 1.0f;
+    public float tileSize = 1.0f;
+    public float yOffset = 1.0f;
 
     public List<PathfindTile> FindNewPath(Vector3 S, Vector3 T) // S Is the start, T is the target
     {
@@ -14,32 +17,7 @@ public class Pathfinding : MonoBehaviour
         //Debug.Log(S);
         Vector3 OriginPosition = RoundVector3(S);
         Vector3 TargetPosition = RoundVector3(T);
-
-        bool testRay = Physics.Linecast(transform.position, OriginPosition, (LayerMask)13);
-        Debug.DrawLine(OriginPosition + new Vector3(TileSize / 2, TileSize / 2, 0), OriginPosition - new Vector3(TileSize / 2, TileSize / 2, 0), Color.magenta, 0.5f);
-        //Debug.Log(OriginPosition);
-        if (testRay)
-        {
-            OriginPosition.x += TileSize;
-            Debug.DrawLine(OriginPosition + new Vector3(TileSize / 2, TileSize / 2, 0), OriginPosition - new Vector3(TileSize / 2, TileSize / 2, 0), Color.magenta, 0.5f);
-            if (testRay)
-            {
-                OriginPosition.y += TileSize;
-                Debug.DrawLine(OriginPosition + new Vector3(TileSize / 2, TileSize / 2, 0), OriginPosition - new Vector3(TileSize / 2, TileSize / 2, 0), Color.magenta, 0.5f);
-                if (testRay)
-                {
-                    OriginPosition.x -= TileSize;
-                    Debug.DrawLine(OriginPosition + new Vector3(TileSize / 2, TileSize / 2, 0), OriginPosition - new Vector3(TileSize / 2, TileSize / 2, 0), Color.magenta, 0.5f);
-                    if (testRay)
-                    {
-                        Debug.LogError("No suitable starting point for pathfind");
-                        return null;
-                    }
-                }
-            }
-        }
         
-
         int Iterations = 0;
         float OriginDistanceFromTarget = GetHeuristic(OriginPosition, TargetPosition);
 
@@ -52,10 +30,10 @@ public class Pathfinding : MonoBehaviour
             PathfindTile CurrentTile = FindMinimumScoreTileInList(OpenList);
             //Debug.Log($"Pos {CurrentTile.Position} H{CurrentTile.Heuristic} C{CurrentTile.Cost} S{CurrentTile.Score}");
 
-            if (Iterations > 50)
+            if (Iterations > 500)
             {
-                Debug.LogError("Iterations exceeded 50. Navigating to furthest tile.");
-                return CalculatePath(CurrentTile);
+                Debug.LogError("Iterations exceeded 500. Returning null");
+                return null;
             }
 
             if (CurrentTile.Position == TargetPosition || CurrentTile.Heuristic <= 1)
@@ -68,18 +46,26 @@ public class Pathfinding : MonoBehaviour
             OpenList.Remove(CurrentTile);
             ClosedList.Add(CurrentTile);
 
-            foreach (PathfindTile NeighborTile in GetNeighborTiles(CurrentTile))
+            foreach (PathfindTile NeighborTile in GetNeighborTiles(CurrentTile, tileSize))
             {
-                Debug.DrawLine(new Vector3(NeighborTile.Position.x + TileSize, NeighborTile.Position.y + TileSize), new Vector3(NeighborTile.Position.x - TileSize, NeighborTile.Position.y - TileSize), Color.red, 0.5f);
+                Debug.DrawLine(new Vector3(NeighborTile.Position.x + tileSize, yOffset, NeighborTile.Position.z + tileSize), new Vector3(NeighborTile.Position.x - tileSize, yOffset, NeighborTile.Position.z - tileSize), Color.red, 0.5f);
 
                 if (IsTileAlreadyInList(NeighborTile, ClosedList)) continue; //if already in closed list or contains a dead zone in the tilemap or there is an obstacle in the way
 
-                RaycastHit2D Ray = Physics2D.Linecast(Vector3ToVector2(NeighborTile.Position), Vector3ToVector2(CurrentTile.Position), (LayerMask)13, minDepth:-1.0f, maxDepth:1.0f);
-                if (Ray.collider)
+                //bool ray = Physics.Linecast(NeighborTile.Position, CurrentTile.Position, 1 << 0, QueryTriggerInteraction.Ignore);
+                //if (ray)
+                //{
+                //    print("linecast hit something!");
+                //}
+
+                bool raycast = Physics.Raycast(NeighborTile.Position, (CurrentTile.Position - NeighborTile.Position).normalized, 10.0f, 1 << 0);
+                if (raycast)
+                {
                     continue;
+                }
 
                 NeighborTile.Heuristic = GetHeuristic(NeighborTile.Position, TargetPosition);
-                NeighborTile.Cost = NeighborTile.Parent.Cost * TileSize + Vector2.Distance(CurrentTile.Position, NeighborTile.Position);
+                NeighborTile.Cost = NeighborTile.Parent.Cost * tileSize + Vector3.Distance(CurrentTile.Position, NeighborTile.Position);
                 NeighborTile.Score = NeighborTile.Heuristic + NeighborTile.Cost;
 
                 if (!IsTileAlreadyInList(NeighborTile, OpenList))
@@ -102,6 +88,7 @@ public class Pathfinding : MonoBehaviour
         while (RefTile.Parent != null)
         {
             Debug.DrawLine(RefTile.Position, RefTile.Parent.Position, Color.green, 0.5f);
+            //Instantiate(debugSphere).position = RefTile.Position;
 
             Path.Add(RefTile.Parent);
             RefTile = RefTile.Parent;
@@ -140,18 +127,18 @@ public class Pathfinding : MonoBehaviour
         return BestTile;
     }
 
-    private List<PathfindTile> GetNeighborTiles(PathfindTile CurrentTile)
+    private List<PathfindTile> GetNeighborTiles(PathfindTile CurrentTile, float tileSize)
     {
         List<PathfindTile> NeighborList = new List<PathfindTile>
         {
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(0.5f, 0,  0)),
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(-0.5f, 0, 0)),
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(0, 0.5f,  0)),
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(0, -0.5f, 0)),
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(0.5f, 0.5f, 0)),
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(0.5f, -0.5f, 0)),
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(-0.5f, 0.5f,  0)),
-            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(-0.5f, -0.5f, 0))
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3( tileSize, 0,  0       )),
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(-tileSize, 0,  0       )),
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3( 0       , 0,  tileSize)),
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3( 0       , 0, -tileSize)),
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3( tileSize, 0,  tileSize)),
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3( tileSize, 0, -tileSize)),
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(-tileSize, 0,  tileSize)),
+            new PathfindTile(CurrentTile, CurrentTile.Position + new Vector3(-tileSize, 0, -tileSize))
         };
 
         return NeighborList;
@@ -165,19 +152,14 @@ public class Pathfinding : MonoBehaviour
     private Vector3 RoundVector3(Vector3 vector3)
     {
         float x;
-        float y;
+        float z;
 
         if (vector3.x > 0)
-            x = Mathf.Max(vector3.x - vector3.x % TileSize, (vector3.x + TileSize / 2) - (vector3.x + TileSize / 2) % TileSize);
-        else x = Mathf.Min(vector3.x - vector3.x % TileSize, (vector3.x - TileSize / 2) - (vector3.x - TileSize / 2) % TileSize);
-        if (vector3.y > 0)
-            y = Mathf.Max(vector3.y - vector3.y % TileSize, (vector3.y + TileSize / 2) - (vector3.y + TileSize / 2) % TileSize);
-        else y = Mathf.Min(vector3.y - vector3.y % TileSize, (vector3.y - TileSize / 2) - (vector3.y - TileSize / 2) % TileSize);
-        return new Vector3(x, y, 0);
-    }
-
-    private Vector2 Vector3ToVector2(Vector3 vector3)
-    {
-        return new Vector2(vector3.x, vector3.y);
+            x = Mathf.Max(vector3.x - vector3.x % tileSize, (vector3.x + tileSize / 2) - (vector3.x + tileSize / 2) % tileSize);
+        else x = Mathf.Min(vector3.x - vector3.x % tileSize, (vector3.x - tileSize / 2) - (vector3.x - tileSize / 2) % tileSize);
+        if (vector3.z > 0)
+            z = Mathf.Max(vector3.z - vector3.z % tileSize, (vector3.z + tileSize / 2) - (vector3.z + tileSize / 2) % tileSize);
+        else z = Mathf.Min(vector3.z - vector3.z % tileSize, (vector3.z - tileSize / 2) - (vector3.z - tileSize / 2) % tileSize);
+        return new Vector3(x, yOffset, z);
     }
 }

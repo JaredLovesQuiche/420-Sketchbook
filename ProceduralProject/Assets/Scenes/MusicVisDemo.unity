@@ -281,12 +281,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25e5f1b8938d520488ccce58b7538908, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  radius: 1
-  amp: 1
+  ringRadius: 10
+  ringHeight: 4
   orbHeight: 10
   orbSize: 65.91
   numBands: 512
-  orbPrefab: {fileID: 8290433647578962604, guid: 35758c88154972a4e95644334145dccc, type: 3}
+  orbPrefab: {fileID: -3152790063424946814, guid: 35758c88154972a4e95644334145dccc, type: 3}
 --- !u!120 &49647478
 LineRenderer:
   m_ObjectHideFlags: 0

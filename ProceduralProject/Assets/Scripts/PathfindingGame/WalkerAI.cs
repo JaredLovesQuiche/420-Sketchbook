@@ -13,7 +13,7 @@ public class WalkerAI : MonoBehaviour
 
     public Ray[] Rays;
 
-    public Vector3 RayPath(Transform Target)
+    public Vector3 RayPath(Vector3 Target)
     {
         Vector3 NewMoveDirection = Vector3.zero;
 
@@ -30,16 +30,16 @@ public class WalkerAI : MonoBehaviour
             Rays[i].Direction = new Vector3(Mathf.Cos(Rotation), 0, Mathf.Sin(Rotation));
 
             Vector3 RaycastStartPos = transform.position + Rays[i].Direction * RaycastDistanceOffset;
-            Physics.Raycast(RaycastStartPos, Rays[i].Direction, out Rays[i].Raycast, 2.0f);
+            Physics.Raycast(RaycastStartPos, Rays[i].Direction, out Rays[i].Raycast, RaycastDistance, 1 << 0);
 
             // If ray hits something, reduce the weight of that direction to avoid crashing into other things.
             if (Rays[i].Raycast.collider)
             {
-                Rays[i].Weight = -2.0f;
+                Rays[i].Weight -= 2.0f;
             }
 
             // Add the dot product of ray direction and direction to target
-            Vector3 directionToTarget = FlattenVector3(Target.position - transform.position).normalized;
+            Vector3 directionToTarget = FlattenVector3(Target - transform.position).normalized;
             float dot = Vector3.Dot(directionToTarget, Rays[i].Direction);
             Rays[i].Weight += dot;
 
